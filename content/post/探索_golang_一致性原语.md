@@ -29,7 +29,7 @@ categories: ["cs"]
 
 学 golang 的朋友都知道，什么是并发、什么是并行。还有人会表达一种观点：“单核就是并发，多核就是并行”，这其实有点片面了。
 
-我们知道，CPU 中是有多条流水线在并行执行我们的指令，也就是说我们的代码在单核 CPU 上也是在并行执行，只不过这是指令级并行。同时，CPU 厂商，为了减少等待从缓存读取数据的时间，也是不遗余力，做了很多优化，比如说：**分支预测**和**乱序执行**。前段时间刷屏的 [Spectre](https://zh.wikipedia.org/wiki/%E5%B9%BD%E7%81%B5_(%E5%AE%89%E5%85%A8%E6%BC%8F%E6%B4%9E)) 和 [Meltdown](https://en.wikipedia.org/wiki/Meltdown_(security_vulnerability)) 漏洞，同样与分支预测以及乱序执行有着直接的因果关系。
+我们知道，指令是在 CPU 中的流水线上执行的，而流水线有多级，各级可以同时执行不同的指令，也就是说我们的代码在单核 CPU 上也是在并行执行，只不过这是指令级并行。同时，CPU 厂商，为了减少等待从缓存读取数据的时间，也是不遗余力，做了很多优化，比如说：**分支预测**和**乱序执行**。前段时间刷屏的 [Spectre](https://zh.wikipedia.org/wiki/%E5%B9%BD%E7%81%B5_(%E5%AE%89%E5%85%A8%E6%BC%8F%E6%B4%9E)) 和 [Meltdown](https://en.wikipedia.org/wiki/Meltdown_(security_vulnerability)) 漏洞，同样与分支预测以及乱序执行有着直接的因果关系。
 
 当然，前面提到的这些，在单核 (single-processor) 运行的时候，都不会造成一致性问题，厂商已经在 CPU 层面替我们处理好了这些。
 
