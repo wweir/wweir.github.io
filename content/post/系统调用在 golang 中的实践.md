@@ -1,7 +1,7 @@
 ---
 title: "系统调用在 Golang 中的实践"
 date: 2018-02-06T07:39:58+08:00
-lastmod: 2018-02-06T07:39:58+08:00
+lastmod: 2018-02-12T07:33:58+08:00
 draft: false
 tags: ["golang","syscall","linux"]
 categories: ["cs"]
