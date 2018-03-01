@@ -35,11 +35,11 @@ copyright = ""            # default: author.name ↓        # 默认为下面配
   weight = 30
   identifier = "tags"
   url = "/tags/"
-[[menu.main]]
-  name = "分类"
-  weight = 40
-  identifier = "categories"
-  url = "/categories/"
+# [[menu.main]]
+#   name = "分类"
+#   weight = 40
+#   identifier = "categories"
+#   url = "/categories/"
 
 [params]
   debug = false             # If true, load `eruda.min.js`. See https://github.com/liriliri/eruda
