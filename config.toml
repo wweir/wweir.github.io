@@ -92,9 +92,9 @@ copyright = ""            # default: author.name ↓        # 默认为下面配
     pagePV = true
 
   [params.reward]                                         # 文章打赏
-    enable = false
+    enable = true
     wechat = "/wechat-qr-code.png"           # 微信二维码
-    alipay = "/alipay-qr-code.jpg"           # 支付宝二维码
+    alipay = "/alipay-qr-code.png"           # 支付宝二维码
 
   [params.social]                                         # 社交链接
     a-email = "mailto:wweir@foxmail.com"
