@@ -1,7 +1,7 @@
 ---
 title: "探索 Golang 一致性原语"
 date: 2018-01-21T22:04:41+08:00
-lastmod: 2018-02-05T21:49:00+08:00
+lastmod: 2018-07-02T08:42:00+08:00
 draft: false
 tags: ["golang","concurrency"]
 categories: ["cs"]
