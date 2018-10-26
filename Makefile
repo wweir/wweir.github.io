@@ -1,13 +1,10 @@
 # personal hugo commands set
 .OS_TYPE	:= $(shell uname -s)
 post :=
-note :=
 
 default:
 ifneq ("${post}", "")
 	@$(MAKE) new post='${post}'
-else ifneq ("${note}", "")
-	@$(MAKE) new note='${note}'
 else
 	@$(MAKE) server
 endif
@@ -15,8 +12,6 @@ endif
 new:
 ifneq ("${post}", "")
 	hugo new 'note/${post}.md'
-else ifneq ("${note}", "")
-	hugo new 'note/${note}.md'
 else
 	@echo please set a TITLE for new article
 	@exit 1
