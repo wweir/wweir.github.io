@@ -1,23 +1,26 @@
 # personal hugo commands set
 .OS_TYPE	:= $(shell uname -s)
-post :=
+new :=
 
 default:
-ifneq ("${post}", "")
-	@$(MAKE) new post='${post}'
+
+ifneq ("${new}", "")
+	@$(MAKE) new new='${new}'
 else
 	@$(MAKE) server
 endif
 
 new:
-ifneq ("${post}", "")
-	hugo new 'note/${post}.md'
+
+ifneq ("${new}", "")
+	hugo new 'post/${new}.md'
 else
 	@echo please set a TITLE for new article
 	@exit 1
 endif
 
 server:
+
 ifeq ("${.OS_TYPE}", "Darwin")
 	open http://localhost:1313 &>/dev/null
 endif
