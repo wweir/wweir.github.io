@@ -1,7 +1,7 @@
 ---
 title: "Golang 项目组织形式的演进"
 date: 2018-10-25T10:38:54+08:00
-lastmod: 2018-10-26T15:46:18+08:00
+lastmod: 2018-10-29T18:04:10+08:00
 draft: false
 tags:
 - golang
