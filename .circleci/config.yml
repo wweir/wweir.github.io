@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: cibuilds/hugo:latest
+    working_directory: ~/hugo
+    steps:
+      # checkout the repository
+      - checkout
+
+      - run:
+          name: build site static pages
+          command: |
+            cd ~/hugo
+            hugo
+
+      # `deploy` step: identical to a `run` step, but uses only one container:
+      # https://circleci.com/docs/2.0/configuration-reference/#deploy
+      - deploy:
+          command: |
+            rsync -avz -e ssh ~/hugo/public root@wweir.cc:/var/www/html
