@@ -18,4 +18,5 @@ jobs:
       # https://circleci.com/docs/2.0/configuration-reference/#deploy
       - deploy:
           command: |
+            ssh-keyscan wweir.cc >> ~/.ssh/known_hosts
             rsync -avz -e ssh ~/hugo/public root@wweir.cc:/var/www/html
