@@ -5,3 +5,4 @@
 *.gz
 *.xz
 *.7z
+**/assets
