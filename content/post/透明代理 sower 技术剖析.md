@@ -11,7 +11,7 @@ categories:
 - dev
 ---
 
-Sower 是一个实现透明代理的一整套解决方案，本文将从第一视角，剖析 sower 中使用的技术点，供学习交流之用。
+Sower 是一套实现透明代理的完整解决方案，本文将从第一视角，剖析 sower 中使用的技术点，供学习交流之用。
 
 项目地址：[github.com/wweir/sower](https://github.com/wweir/sower)
 
