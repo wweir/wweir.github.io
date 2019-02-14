@@ -60,8 +60,8 @@ sower 提供的大多数功能，[v2ray](https://www.v2ray.com/) 中都有提供
 - dnsmasq
   - 提供 DNS 服务，转发 DNS 请求。针对特定场景，甚至可以修改 hosts 达到类似的效果
   - 将指定域名，解析到自己的服务器地址，实现分流，如：将 `*.google.com` 解析到 `192.168.1.2`
-- nginx
-  - 实现正向和反向代理
+- nginx / sniproxy
+  - 实现代理，解析代理 host
   - 正向承接 dnsmasq 偏转过来的流量，打到后续的代理通道中
   - 反向接受代理工具打过来的流量，代理到实际访问的地址
 - privoxy
@@ -151,6 +151,11 @@ Pac、iptables、hosts 之类的方案更多是提供一套**配置**给已有�
 鉴于 Stream、Block 两种加密方式被诟病已久，sower 只支持 AEAD 的加密方式。Layout 设计与 shadowsocks 完全一致，开头两个字节描述 size，后续跟着实际数据。
 
 与 shadowsocks 唯一不同的是 nonce 的设计，sower 直接使用了 golang 提供的伪随机发生器，而 shadowsocks 是自己实现的。后续要开发其它语言的 sower 实现的话，可能要变更相应的伪随机发生器算法。
+
+因为没有使用任何代理协议，**sower 加密的流量在网络中的隐蔽性要高过 shadowsocks 之类普通代理**，更难被检测出。这个是因为 shadowsocks 使用的 socsk5 代理协议，有一个握手包，这个特征在 sower 中是没有的。sower 加密后的流量与加密前的访问流量只有两个差别：
+
+- 流量中没有明文部分
+- 每次交互的流量比加密前大几十个 byte
 
 ### 网络传输
 
