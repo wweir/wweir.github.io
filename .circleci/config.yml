@@ -19,6 +19,6 @@ jobs:
       - deploy:
           name: deploy to wweir.cc
           command: |
-            ssh-keyscan wweir.cc >> ~/.ssh/known_hosts
+            ssh-keyscan bwg.wweir.cc >> ~/.ssh/known_hosts
             cd ~/hugo/public/
-            rsync -avz -e ssh . root@wweir.cc:/var/www/html
+            rsync -avz -e ssh . root@bwg.wweir.cc:/var/www/html
