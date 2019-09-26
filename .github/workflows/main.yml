@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - src
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Hugo
+        run: |
+          LATEST_HUGO_URL="$(wget https://api.github.com/repos/gohugoio/hugo/releases/latest -O- |\
+            awk -F '"' '/browser_download_url.+hugo_extended.+_Linux-64bit.tar.gz/{print $4}')"
+          wget "$LATEST_HUGO_URL" -qO- | tar xzC /tmp
+
+      - name: Build and Deploy
+        run: |
+          set -x
+          /tmp/hugo --cleanDestinationDir --gc
+          mv public /tmp
+          git checkout master
+          rm -rf *
+          mv /tmp/public/* .
+          echo 'wweir.cc' > CNAME
+          touch .nojekyll
+
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git add -A .
+          git commit -m "$(date)"
+
+      - name: Push Pages
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
