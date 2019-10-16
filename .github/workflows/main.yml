@@ -26,6 +26,7 @@ jobs:
           rm -rf *
           mv /tmp/public/* .
           echo 'wweir.cc' > CNAME
+          touch .nojekyll
 
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
