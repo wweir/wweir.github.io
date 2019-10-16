@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: https://wweir.cc/sitemap.xml

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>git on 温习江湖</title>
+    <link>https://wweir.cc/tags/git/</link>
+    <description>Recent content in git on 温习江湖</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 25 Oct 2018 10:38:54 +0800</lastBuildDate>
+    
+	<atom:link href="https://wweir.cc/tags/git/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Golang 项目组织形式的演进</title>
+      <link>https://wweir.cc/post/golang-%E9%A1%B9%E7%9B%AE%E7%BB%84%E7%BB%87%E5%BD%A2%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B/</link>
+      <pubDate>Thu, 25 Oct 2018 10:38:54 +0800</pubDate>
+      
+      <guid>https://wweir.cc/post/golang-%E9%A1%B9%E7%9B%AE%E7%BB%84%E7%BB%87%E5%BD%A2%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B/</guid>
+      <description>包管理与项目组织形式的历史 很多从其它语言转 golang 的程序员都会对 GOPATH 这个设定感到困惑，为什么其它语言不要求把所有代码放在同一个目录，golang 就有</description>
+    </item>
+    
+  </channel>
+</rss>

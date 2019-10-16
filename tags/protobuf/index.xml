@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>protobuf on 温习江湖</title>
+    <link>https://wweir.cc/tags/protobuf/</link>
+    <description>Recent content in protobuf on 温习江湖</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Fri, 26 Oct 2018 17:39:49 +0800</lastBuildDate>
+    
+	<atom:link href="https://wweir.cc/tags/protobuf/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>开发基于 Envoy 的高性能服务网关</title>
+      <link>https://wweir.cc/post/%E5%BC%80%E5%8F%91%E5%9F%BA%E4%BA%8E-envoy-%E7%9A%84%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E7%BD%91%E5%85%B3/</link>
+      <pubDate>Fri, 26 Oct 2018 17:39:49 +0800</pubDate>
+      
+      <guid>https://wweir.cc/post/%E5%BC%80%E5%8F%91%E5%9F%BA%E4%BA%8E-envoy-%E7%9A%84%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E7%BD%91%E5%85%B3/</guid>
+      <description>Envoy 简介 说起 Envoy，听过的人可能不是很多，但如果说 service mesh（服务网格），应该就有不少人听过了。目前 service mesh 一个使用较多、相对成熟的方案是配置</description>
+    </item>
+    
+  </channel>
+</rss>

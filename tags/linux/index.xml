@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>linux on 温习江湖</title>
+    <link>https://wweir.cc/tags/linux/</link>
+    <description>Recent content in linux on 温习江湖</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 01 Mar 2018 17:38:11 +0800</lastBuildDate>
+    
+	<atom:link href="https://wweir.cc/tags/linux/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>资源限制(RLIMIT_NOFILE)的调整细节及内部实现</title>
+      <link>https://wweir.cc/post/%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6rlimit_nofile%E7%9A%84%E8%B0%83%E6%95%B4%E7%BB%86%E8%8A%82%E5%8F%8A%E5%86%85%E9%83%A8%E5%AE%9E%E7%8E%B0/</link>
+      <pubDate>Thu, 01 Mar 2018 17:38:11 +0800</pubDate>
+      
+      <guid>https://wweir.cc/post/%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6rlimit_nofile%E7%9A%84%E8%B0%83%E6%95%B4%E7%BB%86%E8%8A%82%E5%8F%8A%E5%86%85%E9%83%A8%E5%AE%9E%E7%8E%B0/</guid>
+      <description>前言 这是一段两年前的研究，当时也写了篇数千字的长文，因为经验、行文方面的不足，可读性不高，没有对外公开。这里依当时的研究成果，重写一篇来介绍</description>
+    </item>
+    
+    <item>
+      <title>系统调用在 Golang 中的实践</title>
+      <link>https://wweir.cc/post/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%9C%A8-golang-%E4%B8%AD%E7%9A%84%E5%AE%9E%E8%B7%B5/</link>
+      <pubDate>Tue, 06 Feb 2018 07:39:58 +0800</pubDate>
+      
+      <guid>https://wweir.cc/post/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%9C%A8-golang-%E4%B8%AD%E7%9A%84%E5%AE%9E%E8%B7%B5/</guid>
+      <description>在看一些其它语言实现的基础工具时，时而发现其中有我们需要的某项特殊功能。究其源码，一般会看到两种底层实现：汇编、系统调用。这里的系统调用就是</description>
+    </item>
+    
+  </channel>
+</rss>

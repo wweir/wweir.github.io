@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>golang on 温习江湖</title>
+    <link>https://wweir.cc/tags/golang/</link>
+    <description>Recent content in golang on 温习江湖</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 25 Oct 2018 10:38:54 +0800</lastBuildDate>
+    
+	<atom:link href="https://wweir.cc/tags/golang/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Golang 项目组织形式的演进</title>
+      <link>https://wweir.cc/post/golang-%E9%A1%B9%E7%9B%AE%E7%BB%84%E7%BB%87%E5%BD%A2%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B/</link>
+      <pubDate>Thu, 25 Oct 2018 10:38:54 +0800</pubDate>
+      
+      <guid>https://wweir.cc/post/golang-%E9%A1%B9%E7%9B%AE%E7%BB%84%E7%BB%87%E5%BD%A2%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B/</guid>
+      <description>包管理与项目组织形式的历史 很多从其它语言转 golang 的程序员都会对 GOPATH 这个设定感到困惑，为什么其它语言不要求把所有代码放在同一个目录，golang 就有</description>
+    </item>
+    
+    <item>
+      <title>系统调用在 Golang 中的实践</title>
+      <link>https://wweir.cc/post/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%9C%A8-golang-%E4%B8%AD%E7%9A%84%E5%AE%9E%E8%B7%B5/</link>
+      <pubDate>Tue, 06 Feb 2018 07:39:58 +0800</pubDate>
+      
+      <guid>https://wweir.cc/post/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%9C%A8-golang-%E4%B8%AD%E7%9A%84%E5%AE%9E%E8%B7%B5/</guid>
+      <description>在看一些其它语言实现的基础工具时，时而发现其中有我们需要的某项特殊功能。究其源码，一般会看到两种底层实现：汇编、系统调用。这里的系统调用就是</description>
+    </item>
+    
+    <item>
+      <title>探索 Golang 一致性原语</title>
+      <link>https://wweir.cc/post/%E6%8E%A2%E7%B4%A2-golang-%E4%B8%80%E8%87%B4%E6%80%A7%E5%8E%9F%E8%AF%AD/</link>
+      <pubDate>Sun, 21 Jan 2018 22:04:41 +0800</pubDate>
+      
+      <guid>https://wweir.cc/post/%E6%8E%A2%E7%B4%A2-golang-%E4%B8%80%E8%87%B4%E6%80%A7%E5%8E%9F%E8%AF%AD/</guid>
+      <description>缘由 前段时间，一位业内人士问我：你用了几年的 golang，对哪一块有什么比较深的感受么？ 这话提醒了我，用了挺久的 golang，虽和身边的朋友</description>
+    </item>
+    
+  </channel>
+</rss>

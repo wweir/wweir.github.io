@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>探索 Golang 一致性原语 - 温习江湖</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="wweir" /><meta name="description" content="缘由 前段时间，一位业内人士问我：你用了几年的 golang，对哪一块有什么比较深的感受么？ 这话提醒了我，用了挺久的 golang，虽和身边的朋友" /><meta name="keywords" content="devops, golang, concurrency" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.58.3 with theme even" />
+
+
+<link rel="canonical" href="https://wweir.cc/post/%E6%8E%A2%E7%B4%A2-golang-%E4%B8%80%E8%87%B4%E6%80%A7%E5%8E%9F%E8%AF%AD/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<link href="/dist/even.c2a46f00.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="探索 Golang 一致性原语" />
+<meta property="og:description" content="缘由 前段时间，一位业内人士问我：你用了几年的 golang，对哪一块有什么比较深的感受么？ 这话提醒了我，用了挺久的 golang，虽和身边的朋友" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wweir.cc/post/%E6%8E%A2%E7%B4%A2-golang-%E4%B8%80%E8%87%B4%E6%80%A7%E5%8E%9F%E8%AF%AD/" />
+<meta property="article:published_time" content="2018-01-21T22:04:41+08:00" />
+<meta property="article:modified_time" content="2018-07-02T08:42:00+08:00" />
+<meta itemprop="name" content="探索 Golang 一致性原语">
+<meta itemprop="description" content="缘由 前段时间，一位业内人士问我：你用了几年的 golang，对哪一块有什么比较深的感受么？ 这话提醒了我，用了挺久的 golang，虽和身边的朋友">
+
+
+<meta itemprop="datePublished" content="2018-01-21T22:04:41&#43;08:00" />
+<meta itemprop="dateModified" content="2018-07-02T08:42:00&#43;08:00" />
+<meta itemprop="wordCount" content="5020">
+
+
+
+<meta itemprop="keywords" content="golang,concurrency," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="探索 Golang 一致性原语"/>
+<meta name="twitter:description" content="缘由 前段时间，一位业内人士问我：你用了几年的 golang，对哪一块有什么比较深的感受么？ 这话提醒了我，用了挺久的 golang，虽和身边的朋友"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">温习江湖</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">首页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于我</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">温习江湖</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">首页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于我</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">探索 Golang 一致性原语</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2018-01-21 22:04 </span>
+        <div class="post-category">
+            <a href="/categories/cs/"> cs </a>
+            </div>
+          <span class="more-meta"> 约 5020 字 </span>
+          <span class="more-meta"> 预计阅读 11 分钟 </span>
+        <span id="busuanzi_container_page_pv" class="more-meta"> <span id="busuanzi_value_page_pv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 次阅读 </span>
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#缘由">缘由</a></li>
+<li><a href="#一致性的意义">一致性的意义</a>
+<ul>
+<li><a href="#编译器">编译器</a></li>
+<li><a href="#cpu">CPU</a>
+<ul>
+<li><a href="#单核">单核</a></li>
+<li><a href="#多核">多核</a></li>
+</ul></li>
+<li><a href="#happens-before-语义">Happens Before 语义</a></li>
+</ul></li>
+<li><a href="#常用一致性原语">常用一致性原语</a>
+<ul>
+<li><a href="#channel">channel</a></li>
+<li><a href="#锁">锁</a>
+<ul>
+<li><a href="#互斥锁">互斥锁</a></li>
+<li><a href="#读写锁">读写锁</a></li>
+</ul></li>
+<li><a href="#原子操作">原子操作</a></li>
+<li><a href="#其它">其它</a>
+<ul>
+<li><a href="#waitgroup">WaitGroup</a></li>
+<li><a href="#lock-in-runtime">lock in runtime</a></li>
+<li><a href="#happen-before-语义继承图">Happen Before 语义继承图</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#现有原语的不足">现有原语的不足</a>
+<ul>
+<li><a href="#posix-semaphores">POSIX semaphores</a></li>
+<li><a href="#trylock">TryLock</a></li>
+<li><a href="#rcu">RCU</a></li>
+</ul></li>
+<li><a href="#感言">感言</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
+
+<h2 id="缘由">缘由</h2>
+
+<p>前段时间，一位业内人士问我：你用了几年的 golang，对哪一块有什么比较深的感受么？</p>
+
+<p>这话提醒了我，用了挺久的 golang，虽和身边的朋友有不少交流，却没什么整理和分享。刚好前段时间了解了点 golang 的锁之类的一致性原语，在这里就做下记录。</p>
+
+<p>要问为什么要了解一致性原语？主要是因为，在高并发场景下，<strong>锁往往会成为并发能力的瓶颈</strong>。为了避免这个问题，我们往往会选择对服务进行水平扩容，然而多数情况下，这并不能实质性地解决问题，只是将问题往后抛，最后的最后，落在数据库身上。</p>
+
+<h2 id="一致性的意义">一致性的意义</h2>
+
+<h3 id="编译器">编译器</h3>
+
+<p>写过 C/C++ 的朋友应该知道，编译的时候有一大堆优化参数可以调节。golang 也是一样，自带了一大堆优化，不过默认已经调节得挺好了。而这些个优化中，就包括：在逻辑正确的情况下调整代码的前后顺序。</p>
+
+<p>这一点，在单线程的时候没毛病，但多线程或者说并行执行的情况下，就会导致问题。这时，我们需要使用一致性原语，来保证编译器在这里不会进行这些 “看似正确” 的优化。 常见的一致性原语包括锁、原子操作等，在一些语言里还有专门用于临时禁用这些优化的关键字 <code>volatile</code>。</p>
+
+<h3 id="cpu">CPU</h3>
+
+<h4 id="单核">单核</h4>
+
+<p>学 golang 的朋友都知道，什么是并发、什么是并行。还有人会表达一种观点：“单核就是并发，多核就是并行”，这其实有点片面了。我们知道，指令是在 CPU 的流水线上执行的，而流水线有多级，各级同时执行不同的指令，也就是说我们的代码在单核 CPU 上也是在并行执行，只不过这是指令级并行。</p>
+
+<p>CPU 厂商，为了减少等待从缓存读取数据的时间，也是不遗余力，做了很多优化，比如说：<strong>分支预测</strong>和<strong>乱序执行</strong>。前段时间刷屏的 <a href="https://zh.wikipedia.org/wiki/%E5%B9%BD%E7%81%B5_(%E5%AE%89%E5%85%A8%E6%BC%8F%E6%B4%9E)">Spectre</a> 和 <a href="https://en.wikipedia.org/wiki/Meltdown_(security_vulnerability)">Meltdown</a> 漏洞，同样与分支预测以及乱序执行有着直接的因果关系。</p>
+
+<p>当然，前面提到的这些，在单核 (single-processor) 运行的时候，都不会造成一致性问题，厂商已经在 CPU 层面替我们处理好了这些。</p>
+
+<h4 id="多核">多核</h4>
+
+<p>单核的一致性问题，CPU 帮我们解决了，那多核 (multiple-processor) 呢？</p>
+
+<p>这里我们需要了解，CPU 的<strong>每个核心都有独立的 L1、L2 缓存（cache）</strong>，为了提高性能，多数情况下 CPU 读数据是读的缓存，而不是 <a href="https://zh.wikipedia.org/wiki/%E9%9A%8F%E6%9C%BA%E5%AD%98%E5%8F%96%E5%AD%98%E5%82%A8%E5%99%A8">主存 (RAM)</a>。Intel 为了解决这些缓存间的同步问题，在 cache 上实现了 <a href="https://en.wikipedia.org/wiki/MESIF_protocol">MESIF 协议</a>，来保证缓存的同步，即：在一处修改缓存后，其它缓存的状态会跟着改变。</p>
+
+<p>但 MESIF 只解决了缓存的<strong>空间一致性</strong>问题，并没有解决<strong>时间一致性</strong>问题。之前提到的<strong>分支预测</strong>和<strong>乱序执行</strong>在多核的情况下，会导致代码出错。例如：</p>
+
+<pre><code class="language-go">var data, flag, out int
+// run in two processors
+    +                +
+data = 1             |
+flag = 1        for {
+    |               if r1 := flag; r1 == 1 {
+    |                   r2 := data
+    |                   out = r2
+    |                   break
+    |               }
+    |           }
+    v                v
+
+// * r1、r2 在这里可以理解为 CPU 的寄存器，需要先从缓存载入才能进行计算，
+// 其它变量也有载入寄存器的过程，这里没有突出描述。
+// * 虽然看起来这段执行顺序没有问题，但 out 的值却很有可能为 0。
+// 因为 CPU 很有可能对我们的指令进行重排序，将 flag 的赋值提到了 data 的前面，
+// 亦或者，将 data 的缓存载入，提到了最前面执行。
+</code></pre>
+
+<p>我们来简单看一下，Intel 是怎么描述 CPU 在多核的场景下，缓存的行为：</p>
+
+<blockquote>
+<p>In a multiple-processor system, the following ordering principles apply:</p>
+
+<ul>
+<li>Individual processors use the same ordering principles as in a single-processor system.</li>
+<li>Writes by a single processor are observed in the same order by all processors.</li>
+<li>Writes from an individual processor are NOT ordered with respect to the writes from other processors.</li>
+<li>Memory ordering obeys causality (memory ordering respects transitive visibility).</li>
+<li>Any two stores are seen in a consistent order by processors other than those performing the stores</li>
+<li>Locked instructions have a total order.</li>
+</ul>
+</blockquote>
+
+<p>这里描述得很明显，写与写之间没有顺序保证。这会直接导致我们在“读-&gt;计算-&gt;写” 这个场景的执行过程中，可能有新的写发生，导致覆写，影响最后输出的结果的正确性。</p>
+
+<h3 id="happens-before-语义">Happens Before 语义</h3>
+
+<p>既然并行场景下会出问题，那我们就必须有解决这个问题的方法，也就是我们今天的主角：一致性原语。</p>
+
+<p>一致性原语在支持并行的语言里都有支持，golang 也不例外。golang 官方已经提供给我们不少资料来描述这个问题，首先就是 github 上的 <a href="https://github.com/golang/go/wiki/LearnConcurrency">LearnConcurrency</a>，里面详细介绍了一致性原语的设计、使用中的细节。其中最推荐看的是这篇  <a href="https://golang.org/ref/mem">The Go Memory Model</a>，不仅列举了不少一致性原语的正确打开方式，更是引入了<a href="https://golang.org/ref/mem#tmp_2">Happens Before</a> 这一重要概念。</p>
+
+<p><a href="https://en.wikipedia.org/wiki/Happened-before">Happens Before</a> 语义是一致性原语能够实现一致性的重要保障，在许多其它语言的相关设计中，同样占有着重要的地位，<a href="http://zh.cppreference.com/w/cpp/atomic/memory_order">C++</a>、<a href="https://docs.oracle.com/javase/tutorial/essential/concurrency/memconsist.html">Java</a> 中就同样有详细介绍他们的文档。Happens Before 描述的核心问题是代码（指令）执行的时序问题，简单的理解就是：在执行了带有 Happens Before 语义的指令时，这个指令之前的代码影响面必须在执行该指令之后的代码之前已存在。这样的描述看起来有点抽象，我们不妨来看一下 Intel 对的 <code>LFENCE</code> 指令的描述，虽然 golang 并没有使用 <code>LFENCE</code> 来实现 Happens Before，但它的行为和 Happens Before 倒是可以完整对得上。</p>
+
+<blockquote>
+<p>The LFENCE instruction establishes a memory fence for loads. It guarantees ordering between two loads and prevents speculative loads from passing the load fence (that is, no speculative loads are allowed until all loads specified before the load fence have been carried out).</p>
+</blockquote>
+
+<h2 id="常用一致性原语">常用一致性原语</h2>
+
+<p>让我们再回头来看下这篇 <a href="https://golang.org/ref/mem">The Go Memory Model</a>，里面讲到， golang 中有数个地方实现了 Happens Before 语义，分别是 <a href="https://golang.org/ref/mem#tmp_4">init 函数</a>、<a href="https://golang.org/ref/mem#tmp_5">goruntine 的创建</a>、<a href="https://golang.org/ref/mem#tmp_6">goruntine 的销毁</a>、<a href="https://golang.org/ref/mem#tmp_7"><strong>channel 通讯</strong></a>、<a href="https://golang.org/ref/mem#tmp_8"><strong>锁</strong></a>、<a href="https://golang.org/ref/mem#tmp_9"><strong>sync 包的 once</strong></a>。注意，这里没有提到 <a href="https://golang.org/pkg/sync/atomic/">atomic</a> 里的操作，这点后面我们还会提到。</p>
+
+<h3 id="channel">channel</h3>
+
+<p>channel 通讯的概念和语法实在没什么好说的，作为 golang 的亮点特性，已经有太多的教程对此做了详细的介绍。内部实现主要是<strong>使用锁来保证一致性</strong>，但这把锁并不是标准库里的锁，而是在 runtime 中自己实现的一把更加简单、高效的锁。既然依托于锁来保证一致性，那我们在这里就没什么必要去做详细的解读了。</p>
+
+<p>channel 的实现中还有一个等待队列的处理，同样是精彩而漂亮，可惜不是我们今天的主角，但不妨我们来简单看一下 channel 的定义：</p>
+
+<pre><code class="language-Go">type hchan struct {
+...
+	buf      unsafe.Pointer // points to an array of dataqsiz elements
+...
+	recvq    waitq  // list of recv waiters
+	sendq    waitq  // list of send waiters
+
+	// lock protects all fields in hchan, as well as several
+	// fields in sudogs blocked on this channel.
+	//
+	// Do not change another G's status while holding this lock
+	// (in particular, do not ready a G), as this can deadlock
+	// with stack shrinking.
+	lock mutex
+}
+</code></pre>
+
+<h3 id="锁">锁</h3>
+
+<p>锁是我们熟悉到不能再熟悉的一致性手段，channel 和 <a href="https://golang.org/pkg/sync/#Once">once</a> 的实现也都是内部自带一把锁来保障一致性，golang 1.9 新推出的 <a href="https://golang.org/doc/go1.9#sync-map">sync-map</a> 也是自带了一把锁。</p>
+
+<h4 id="互斥锁">互斥锁</h4>
+
+<p>根据前面看到的情况，我们知道：互斥锁是实现 Happens Before 语义的重要一环。这样，我们就必须了解一下互斥锁的内部实现：</p>
+
+<pre><code class="language-Go">// A Mutex must not be copied after first use.
+type Mutex struct {
+    // 记录锁的状态
+	state int32
+    // semaphore，描绘获取锁的进度，
+    // 和 runtime 做交互，实现加入、退出一个用 treap 实现的高效等待（调度）队列
+	sema  uint32 
+}
+</code></pre>
+
+<p>简单得有点出乎意料，只用两个变量就实现了锁的功能。那么，它又是如何实现 Happens Before 语义的？为此，我们需要查看 <code>Mutex.Lock()</code> 方法的实现：</p>
+
+<pre><code class="language-Go">func (m *Mutex) Lock() {
+	// Fast path: grab unlocked mutex.
+	if atomic.CompareAndSwapInt32(&amp;m.state, 0, mutexLocked) {
+		if race.Enabled {
+			race.Acquire(unsafe.Pointer(m))
+		}
+		return
+	}
+	... // 包括 spin lock 以及进入等待（调度）队列的逻辑
+}
+</code></pre>
+
+<p>还是一如继往的“简洁”，简洁到让人怀疑是不是找错了代码，然而<strong>必然运行</strong>的代码只有这一处。难道说，带有 Happens Before 语义的互斥锁是用一个在“<a href="https://golang.org/ref/mem">官方介绍</a>”中不带  Happens Before 语义的 atomic 实现的？</p>
+
+<p>如果仅仅这样，我们就认为是 <code>atomic.CompareAndSwapInt32</code> 实现了 Happens Before 语义，相信不仅是我，各位也不会信服。我们来看看这个 cas 操作的具体实现吧，不过 cas 等一众 atomic 操作都是用汇编来实现的，看起来会比较费劲：</p>
+
+<pre><code class="language-Asm">TEXT ·CompareAndSwapInt32(SB),NOSPLIT,$0-17
+	JMP	·CompareAndSwapUint32(SB)
+
+TEXT ·CompareAndSwapUint32(SB),NOSPLIT,$0-17
+	MOVQ	addr+0(FP), BP
+	MOVL	old+8(FP), AX
+	MOVL	new+12(FP), CX
+	LOCK
+	CMPXCHGL	CX, 0(BP)
+	SETEQ	swapped+16(FP)
+	RET
+</code></pre>
+
+<p>这下看起来倒是有点像了，里面看到了 <code>LOCK</code> 这个看起来挺靠谱的<strong>指令前缀</strong>。让我们看一看 <code>LOCK</code> 的具体意义，在 <a href="https://www.intel.cn/content/www/cn/zh/architecture-and-technology/64-ia-32-architectures-software-developer-manual-325462.html">英特尔开发人员手册</a> 中，我们到了如下的解释：</p>
+
+<blockquote>
+<p>The I/O instructions, locking instructions, the LOCK prefix, and serializing instructions force stronger orderingon the processor.</p>
+
+<hr />
+
+<p>Memory mapped devices and other I/O devices on the bus are often sensitive to the order of writes to their I/Obuffers. I/O instructions can be used to (the IN and OUT instructions) impose strong write ordering on suchaccesses as follows. Prior to executing an I/O instruction, the processor waits for all previous instructions in theprogram to complete and for all buffered writes to drain to memory. Only instruction fetch and page tables walkscan pass I/O instructions. Execution of subsequent instructions do not begin until the processor determines thatthe I/O instruction has been completed.</p>
+</blockquote>
+
+<p>从描述中，我们了解到：<code>LOCK</code> 指令前缀提供了强一致性的内(缓)存读写保证，可以保证 <code>LOCK</code> 之后的指令在带 <code>LOCK</code> 前缀的指令执行之后才会执行。同时，我们在手册中还了解到，现代的 CPU 中的 <code>LOCK</code> 操作并不是简单锁 CPU 和主存之间的通讯总线， Intel 在 cache 层实现了这个 <code>LOCK</code> 操作，因此我们也无需为 <code>LOCK</code> 的执行效率担忧。</p>
+
+<p>如果对这个结论持怀疑态度的话，我们不妨来自己试试实现一个 mutex，看是否能保证 Happens Before 语义。当然，在笔者的简单测试中，这个 mutex 除了占用稍高，一致性并没有什么问题。</p>
+
+<pre><code class="language-go">const locked = 1
+var mu int32
+
+func lock(mu *int32) {
+	for {
+		if atomic.CompareAndSwapInt32(mu, 0, locked) {
+			return
+		}
+		// std sync package spin and put thread into wait queue here
+		runtime.Gosched()
+	}
+}
+
+func unlock(mu *int32) {
+	atomic.AddInt32(mu, -locked)
+}
+</code></pre>
+
+<h4 id="读写锁">读写锁</h4>
+
+<p>golang 的读写锁是使用一个互斥锁加数个控制变量实现的，其中读锁独立使用原子操作进行实现。当然，相比简单的原子操作，还多加了一系列调用了 runtime 的函数，用以实现等待队列。而写锁，则是在互斥锁外边又包了一层逻辑来记录当前锁的状态。经过前面互斥锁的解读，相信这里不需要做过多解释也就基本理解了。</p>
+
+<p>在使用的过程中，我们需要注意下：当有至少一处写锁在等待读锁时，新来的读锁会等待这个写锁先执行，而不是直接使用已有的写锁，这个逻辑主要是为了避免写锁饿死。因此，如下的代码会造成<strong>死锁</strong>：</p>
+
+<pre><code class="language-go">package main
+
+import (
+	&quot;sync&quot;
+	&quot;time&quot;
+)
+
+func main() {
+	mu := sync.RWMutex{}
+	mu.RLock()
+	defer mu.RUnlock() // do not unlock in defer
+
+	go func(mu *sync.RWMutex) {
+		mu.Lock()
+		defer mu.Unlock()
+	}(&amp;mu)
+	time.Sleep(time.Second) // a rough way to ensure new goroutine running
+
+	mu.RLock() // deadlock
+	defer mu.RUnlock()
+}
+</code></pre>
+
+<h3 id="原子操作">原子操作</h3>
+
+<p>原子操作可以说是一致性原语中最简单、高效的一种了，能够保证我们的操作一定是完整的，执行过程中不会被打断，也不会有其它的操作在我们的执行过程中加塞进来。因为简单，很多人都认为自己已经完全掌握它了，那么我们来看点不一样的。</p>
+
+<p>前面我们提到，Cas 操作使用 <code>LOCK</code> 前缀来保证动作的原子性，那么所有的 atomic 操作都是这么实现的吗？为此，我们需要完整翻一遍 atomic 的汇编实现，看看各个实现各个操作的关键指令是什么：</p>
+
+<ul>
+<li>Swap    : <code>XCHGQ</code></li>
+<li>Cas     : <code>LOCK</code> 搭配 <code>CMPXCHGQ</code></li>
+<li>Add     : <code>LOCK</code> 搭配 <code>XADDQ</code></li>
+<li>Load    : <code>MOVQ</code></li>
+<li>Store   : <code>XCHGQ</code></li>
+<li>Pointer : 以上操作搭配 runtime 的 GC 调度</li>
+</ul>
+
+<p>让我们在打开 Intel 手册，看看这些指令都是怎么运行的：</p>
+
+<blockquote>
+<ul>
+<li>The LOCK prefix is automatically assumed for XCHG instruction.</li>
+</ul>
+
+<hr />
+
+<p>The Intel486 processor (and newer processors since) guarantees that the following basic memory operations willalways be carried out atomically:</p>
+
+<ul>
+<li><p>Reading or writing a byte</p></li>
+
+<li><p>Reading or writing a word aligned on a 16-bit boundary</p></li>
+
+<li><p>Reading or writing a doubleword aligned on a 32-bit boundary</p></li>
+</ul>
+
+<p>The Pentium processor (and newer processors since) guarantees that the following additional memory operationswill always be carried out atomically:</p>
+
+<ul>
+<li><p>Reading or writing a quadword aligned on a 64-bit boundary</p></li>
+
+<li><p>16-bit accesses to uncached memory locations that fit within a 32-bit data bus</p></li>
+</ul>
+
+<p>The P6 family processors (and newer processors since) guarantee that the following additional memory operationwill always be carried out atomically:</p>
+
+<ul>
+<li>Unaligned 16-, 32-, and 64-bit accesses to cached memory that fit within a cache line</li>
+</ul>
+</blockquote>
+
+<p>这下，我们知道了，所有 <code>Store</code> 内存的操作，实际上都带了 <code>LOCK</code> 前缀，也就是说都有 Happens Before 的语义。而 golang 在分配内存的时候，是实现了内存对齐的，所以单纯地 <code>Load</code> 内存的操作，也可以保证操作原子性，但不保证 Happens Before 的语义。这也刚好解释了为何在  <a href="https://golang.org/ref/mem">The Go Memory Model</a> 只字不提 atomic 和 Happens Before 的关系。</p>
+
+<h3 id="其它">其它</h3>
+
+<h4 id="waitgroup">WaitGroup</h4>
+
+<p>WaitGroup 也算是我们在写异步代码时一个常用的操作了，它的三个操作<code>Add</code>、<code>Done</code>、<code>Wait</code> 也是用 atomic 实现的，并且三个操作都带有 Happens Before 的语义。</p>
+
+<h4 id="lock-in-runtime">lock in runtime</h4>
+
+<p>runtime 为了避免包的循环导入，在内部实现了一致性原语，并且封装了两套 <code>mutex</code> 。<code>futex</code> 版用于 linux 平台，<code>sema</code> 版用于 MacOS 和 Windows。这两套的主要区别是 futex 使用了 linux 的系统调用，sleep 操作使用 kernel 提供的服务，而不是 runtime 自己封装的 sleep。</p>
+
+<h4 id="happen-before-语义继承图">Happen Before 语义继承图</h4>
+
+<pre><code>                +----------+ +-----------+   +---------+
+                | sync.Map | | sync.Once |   | channel |
+                ++---------+++---------+-+   +----+----+
+                 |          |          |          |
+                 |          |          |          |
++------------+   | +-----------------+ |          |
+|            |   | |       +v--------+ |          |
+|  WaitGroup +---+ | RwLock|  Mutex  | |   +------v-------+
++------------+   | +-------+---------+ |   | runtime lock |
+                 |                     |   +------+-------+
+                 |                     |          |
+                 |                     |          |
+                 |                     |          |
+         +------+v---------------------v   +------v-------+
+         | LOAD | other atomic action  |   |runtime atomic|
+         +------+--------------+-------+   +------+-------+
+                               |                  |
+                               |                  |
+                  +------------v------------------v+
+                  |           LOCK prefix          |
+                  +--------------------------------+
+
+</code></pre>
+
+<h2 id="现有原语的不足">现有原语的不足</h2>
+
+<p>写这个章节，说起来还挺虚的，经历了那么多商业公司论证的一致性原语设计，很难说有什么问题，这里更多可以理解为吐槽吧。</p>
+
+<h3 id="posix-semaphores">POSIX semaphores</h3>
+
+<p>POSIX 信号量是进程间保证一致性的一个手段，当然也可以用于线程间通信。实际上，进程内通讯的话，channel  比 semaphores 更加高效、易用。</p>
+
+<p>需要进行进程间通讯的话，可以直接使用一些第三方封装好的包。如果愿意的话，也可以自己来封装一套系统调用，用以实现 POSIX 信号量。不出意外的话，过段时间我也会写一篇介绍如何封装系统调用的文章。</p>
+
+<h3 id="trylock">TryLock</h3>
+
+<p>TryLock 在一些依耐锁比较严重的项目中会用到，主要是用来为锁提供一个类似 channel 的 select 的功能。在能上锁的时候上锁，锁被别人占用的时候，就去做其它事情。</p>
+
+<p>网上也可以找到一些第三方实现，比如说 <a href="https://godoc.org/github.com/google/netstack/tmutex">tmutex</a>。不过第三方的封装不是很全，并且终归没有标准库用起来方便。</p>
+
+<h3 id="rcu">RCU</h3>
+
+<p><a href="https://en.wikipedia.org/wiki/Read-copy-update">RCU</a> 是 Read-copy-update 的缩写，主要用来提供将一个读锁升级为写锁的能力，这个相比上面两个更加具有实用场景。在<strong>读多写少并发高</strong>的地方，我们会优先考虑上读锁，上完读锁之后想要在保障一致性不中断的情况下换上写锁，就要大费一番周章。而如果有 RCU 的支持，这一切都不是问题。</p>
+
+<p>很可惜，在 <a href="https://godoc.org/?q=rcu">godoc</a> 上还未看见任何实现。为此，笔者自己封装了一个库 <a href="https://github.com/wweir/rcu-go">rcu-go</a>，为了能够直接修改读写锁里的非导出字段，中间使用了很多 unsafe 的操作，使用之前需要确认在自己的 golang 版本上能否正常运行。</p>
+
+<h2 id="感言">感言</h2>
+
+<p>一致性的问题一直以来都不是一个简单的问题，寥寥数千字，难言其中十之一二，如果需要了解更多的内容，建议在有一定基础之后直接阅读  <a href="https://www.intel.cn/content/www/cn/zh/architecture-and-technology/64-ia-32-architectures-software-developer-manual-325462.html">英特尔开发人员手册</a>。</p>
+
+<p>阅读本文需要较深的功底和一些并发场景的处理经验，如果看完觉得还是一头雾水，完全可以选择忽略，因为需要用到这些知识点的机会本就少之又少。正如 <a href="https://golang.org/ref/mem">The Go Memory Model</a> 所言：</p>
+
+<blockquote>
+<p>If you must read the rest of this document to understand the behavior of your program, you are being too clever.</p>
+
+<p>Don&rsquo;t be clever.</p>
+</blockquote>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">wweir</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2018-07-02 08:42
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a></span>
+  </p>
+</div>
+<div class="post-reward">
+  <input type="checkbox" name="reward" id="reward" hidden />
+  <label class="reward-button" for="reward">赞赏支持</label>
+  <div class="qr-code">
+    
+    <label class="qr-code-image" for="reward">
+        <img class="image" src="/wechat-qr-code.png">
+        <span>微信打赏</span>
+      </label>
+    <label class="qr-code-image" for="reward">
+        <img class="image" src="/alipay-qr-code.png">
+        <span>支付宝打赏</span>
+      </label>
+  </div>
+</div><footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/golang/">golang</a>
+          <a href="/tags/concurrency/">concurrency</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%9C%A8-golang-%E4%B8%AD%E7%9A%84%E5%AE%9E%E8%B7%B5/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">系统调用在 Golang 中的实践</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2018-01-21 22:04:41 \x2b0800 \x2b0800',
+        title: '探索 Golang 一致性原语',
+        clientID: '39fb15be6da69f060191',
+        clientSecret: 'a3b3072801814b4b5463b98fd8aae27651e79f01',
+        repo: 'wweir.github.io',
+        owner: 'wweir',
+        admin: ['wweir'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:wweir@foxmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://stackoverflow.com/users/5540725/wweir" class="iconfont icon-stack-overflow" title="stack-overflow"></a>
+      <a href="https://plus.google.com/&#43;wweir" class="iconfont icon-google" title="google"></a>
+      <a href="https://github.com/wweir" class="iconfont icon-github" title="github"></a>
+      <a href="https://www.zhihu.com/people/wweir" class="iconfont icon-zhihu" title="zhihu"></a>
+      <a href="https://www.douban.com/people/wweir26/" class="iconfont icon-douban" title="douban"></a>
+      <a href="https://getpocket.com/@wweir9" class="iconfont icon-pocket" title="pocket"></a>
+  <a href="https://wweir.cc/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  <div class="busuanzi-footer">
+    <span id="busuanzi_container_site_pv"> 本站总访问量 <span id="busuanzi_value_site_pv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 次 </span>
+      <span class="division">|</span>
+    <span id="busuanzi_container_site_uv"> 本站总访客数 <span id="busuanzi_value_site_uv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 人 </span>
+  </div>
+
+  <span class="copyright-year">
+    &copy; 
+    2018-01-10 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">wweir</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  <script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.26188efa.min.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

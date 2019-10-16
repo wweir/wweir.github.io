@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>资源限制(RLIMIT_NOFILE)的调整细节及内部实现 - 温习江湖</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="wweir" /><meta name="description" content="前言 这是一段两年前的研究，当时也写了篇数千字的长文，因为经验、行文方面的不足，可读性不高，没有对外公开。这里依当时的研究成果，重写一篇来介绍" /><meta name="keywords" content="devops, golang, concurrency" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.58.3 with theme even" />
+
+
+<link rel="canonical" href="https://wweir.cc/post/%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6rlimit_nofile%E7%9A%84%E8%B0%83%E6%95%B4%E7%BB%86%E8%8A%82%E5%8F%8A%E5%86%85%E9%83%A8%E5%AE%9E%E7%8E%B0/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<link href="/dist/even.c2a46f00.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="资源限制(RLIMIT_NOFILE)的调整细节及内部实现" />
+<meta property="og:description" content="前言 这是一段两年前的研究，当时也写了篇数千字的长文，因为经验、行文方面的不足，可读性不高，没有对外公开。这里依当时的研究成果，重写一篇来介绍" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wweir.cc/post/%E8%B5%84%E6%BA%90%E9%99%90%E5%88%B6rlimit_nofile%E7%9A%84%E8%B0%83%E6%95%B4%E7%BB%86%E8%8A%82%E5%8F%8A%E5%86%85%E9%83%A8%E5%AE%9E%E7%8E%B0/" />
+<meta property="article:published_time" content="2018-03-01T17:38:11+08:00" />
+<meta property="article:modified_time" content="2018-03-01T17:38:11+08:00" />
+<meta itemprop="name" content="资源限制(RLIMIT_NOFILE)的调整细节及内部实现">
+<meta itemprop="description" content="前言 这是一段两年前的研究，当时也写了篇数千字的长文，因为经验、行文方面的不足，可读性不高，没有对外公开。这里依当时的研究成果，重写一篇来介绍">
+
+
+<meta itemprop="datePublished" content="2018-03-01T17:38:11&#43;08:00" />
+<meta itemprop="dateModified" content="2018-03-01T17:38:11&#43;08:00" />
+<meta itemprop="wordCount" content="4056">
+
+
+
+<meta itemprop="keywords" content="linux,rlimit," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="资源限制(RLIMIT_NOFILE)的调整细节及内部实现"/>
+<meta name="twitter:description" content="前言 这是一段两年前的研究，当时也写了篇数千字的长文，因为经验、行文方面的不足，可读性不高，没有对外公开。这里依当时的研究成果，重写一篇来介绍"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">温习江湖</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">首页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于我</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">温习江湖</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">首页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于我</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">资源限制(RLIMIT_NOFILE)的调整细节及内部实现</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2018-03-01 17:38 </span>
+        <div class="post-category">
+            <a href="/categories/ops/"> ops </a>
+            </div>
+          <span class="more-meta"> 约 4056 字 </span>
+          <span class="more-meta"> 预计阅读 9 分钟 </span>
+        <span id="busuanzi_container_page_pv" class="more-meta"> <span id="busuanzi_value_page_pv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 次阅读 </span>
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#前言">前言</a></li>
+<li><a href="#调整方式">调整方式</a>
+<ul>
+<li><a href="#调整的权限">调整的权限</a></li>
+<li><a href="#临时配置">临时配置</a>
+<ul>
+<li><a href="#在线配置">在线配置</a></li>
+<li><a href="#rlimit-nofile">RLIMIT_NOFILE</a></li>
+</ul></li>
+<li><a href="#持久化配置">持久化配置</a>
+<ul>
+<li><a href="#用户级配置">用户级配置</a></li>
+<li><a href="#进程级配置">进程级配置</a>
+<ul>
+<li><a href="#systemd">systemd</a></li>
+<li><a href="#sysvinit">SysVinit</a></li>
+</ul></li>
+<li><a href="#变更用户">变更用户</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#源码分析">源码分析</a>
+<ul>
+<li><a href="#从文档入手">从文档入手</a></li>
+<li><a href="#rlimit-nofile-的控制逻辑">RLIMIT_NOFILE 的控制逻辑</a></li>
+<li><a href="#资源限制信息的保存">资源限制信息的保存</a></li>
+<li><a href="#rlimit-nofile-的两个默认值">RLIMIT_NOFILE 的两个默认值</a></li>
+</ul></li>
+<li><a href="#纠误与总结">纠误与总结</a>
+<ul>
+<li><a href="#纠误">纠误</a></li>
+<li><a href="#总结">总结</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
+
+<h1 id="前言">前言</h1>
+
+<p>这是一段两年前的研究，当时也写了篇数千字的长文，因为经验、行文方面的不足，可读性不高，没有对外公开。这里依当时的研究成果，重写一篇来介绍配置<code>资源限制</code>过程中的一些细节，及<code>最大打开文件描述符数量(RLIMIT_NOFILE)</code>的部分源码实现。</p>
+
+<p>资源限制（resource limit），一般用 <code>rlimit</code> 来表示，是内核对占用的资源的一个限额。避免某一用户、进程过多占用系统资源，造成系统资源紧张。 <code>ulimit</code> 命令是在 <code>bash</code> 中观察资源限制的一个常用手段，还可以查看 <code>/proc/$PID/limits</code> 文件来观察特定进程的资源限制。</p>
+
+<p>最大打开文件描述符数限制 (<code>RLIMIT_NOFILE</code>,<code>ulimit -n</code>)，是一个常见的资源限制，因其默认值比较小(1024)，所以运行一些需要打开大量文件描述符（文件、连接等）的进程，如 MySQL、nginx，经常会触发这个限制。如果在错误日志中看到包含以下字样的内容，很可能就是遇到了这个限制。</p>
+
+<pre><code>too many open files
+</code></pre>
+
+<h1 id="调整方式">调整方式</h1>
+
+<h2 id="调整的权限">调整的权限</h2>
+
+<p>资源限制有软、硬限制之分，其中实际生效的是软限制，硬限制是软限制调节的一个限度，即：软限制 &lt;= 硬限制。普通用户可以自由修改软限制，和调小自己的硬限制，<code>root</code> 用户可以自由修改自己的软、硬限制。</p>
+
+<p>Linux 系统除了提供了用户级的权限管理机制，还提供了更加细化的权限管理方式，比如：<a href="https://linux.die.net/man/7/capabilities">capabilities</a>。因此，在拥有合适的 capability 后，以普通用户权限运行的进程，也具有修改硬限制的能力。与资源限制相关的 capabilities 有 <code>CAP_SYS_RESOURCE</code> 和 <code>CAP_SYS_ADMIN</code>，可以在 man 文档中找到二者的具体作用。</p>
+
+<h2 id="临时配置">临时配置</h2>
+
+<p>通常我们通过 <a href="https://linux.die.net/man/3/ulimit">ulimit</a> 命令修改当前环境的软、硬资源限制，如：<code>ulimit -Hn 1048576</code>。需要注意，ulimit 是 bash 内置的一条命令，其它 shell 也可以有一套不同的实现。如：</p>
+
+<ul>
+<li>csh 对应的命令是 <code>limit</code></li>
+<li>dash(debian/ubuntu 中的 <code>sh</code>) 提供的命令也是 <code>ulimit</code>，但参数不同</li>
+</ul>
+
+<h3 id="在线配置">在线配置</h3>
+
+<p>前面提到的这个配置方式，需要在进程启动前就将相关的环境配好，对修改运行中的进程的资源限制就无能为力了。在稍新的系统中（<a href="https://www.kernel.org/pub/linux/kernel/"><code>linux</code></a> ≥ 2.6.36），还有两种修改运行中的进程资源限制的方式：</p>
+
+<ul>
+<li>使用 <a href="https://linux.die.net/man/2/prlimit"><code>prlimit</code></a> (<a href="https://www.kernel.org/pub/linux/utils/util-linux/"><code>util-linux</code></a> ≥ 2.21) 修改指定进程的资源限制</li>
+<li>直接修改进程对应的 <code>/proc/$PID/limits</code> 文件</li>
+</ul>
+
+<h3 id="rlimit-nofile">RLIMIT_NOFILE</h3>
+
+<p>根据前文可以了解到，以 root 运行或带有 capability(CAP_SYS_RESOURCE) 的进程，可以自由调整 RLIMIT_NOFILE 的软、硬限制。实际上，这里的调整也算不上完全自由，还有一些其它限制在起作用：</p>
+
+<ul>
+<li>硬限制不能超过 <code>/proc/sys/fs/nr_open</code> 文件中的数字，默认是<code>1048576(1&lt;&lt;20)</code>。老版本内核的系统中没有这个文件，值硬编码为<code>1048576</code>
+
+<ul>
+<li><code>ulimit -Sn</code> &lt;= <code>ulimit -Hn</code> &lt;= <code>cat /proc/sys/fs/nr_open</code></li>
+</ul></li>
+<li>内核能打开的最大文件描述符数量为 <code>/proc/sys/fs/file-max</code> 里的数值，该值根据机器性能而定</li>
+<li>虽然调节前两项中对应的文件的数字可以将软、硬限制调大，但最终受限于机器的硬件性能</li>
+</ul>
+
+<h2 id="持久化配置">持久化配置</h2>
+
+<p>直接使用 <code>ulimit</code> 命令的方式，日常操作中这么操作没什么问题。但在持久化这个配置时，直接在 shell 的配置文件中使用这样的命令，未免显得 low，同时也不利于权限、资源限制的细化管理。</p>
+
+<h3 id="用户级配置">用户级配置</h3>
+
+<p>操作系统中，提供了一套用来配置各用户(组)的资源限制的方式，配置文件在：</p>
+
+<pre><code class="language-sh">/etc/security/limits.conf
+/etc/security/limits.d/*
+</code></pre>
+
+<p>配置文件支持配置各个资源限制项的软、硬限制，支持从用户、用户组、全局三个层级进行配置。</p>
+
+<p>对于一些拥有单独运行用户的服务，建议使用这种方式进行配置。特别是一些本身由数个在同一用户下运行的进程构成的服务，配置一次，数个进程都能受到影响。</p>
+
+<h3 id="进程级配置">进程级配置</h3>
+
+<p>对于那些直接运行在主用户或 root 用户下的进程，直接修改对应用户的配置也是可以的，不过算不上优雅。同时，在自己封装一些服务的安装包或者安装脚本的时候，必须考虑各种可能的运行环境，还必须尽量少的影响用户自己的环境设置，这就必须考虑做进程级的资源限制配置了。</p>
+
+<h4 id="systemd">systemd</h4>
+
+<p>这在 CentOS 7 等以 <a href="https://wiki.archlinux.org/index.php/systemd_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)"><code>systemd</code></a> 作为启动管理器的操作系统中很好实现。只要在对应的 service 文件中写入</p>
+
+<pre><code>LimitNOFILE = 1048576
+</code></pre>
+
+<p>就可以了，全部的资源限制的配置方式在 <a href="https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Process%20Properties">systemd 的文档</a>中。</p>
+
+<h4 id="sysvinit">SysVinit</h4>
+
+<p>在使用 <a href="https://wiki.archlinux.org/index.php/SysVinit_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)">SysVinit</a> 作为启动管理器的操作系统时，就没那么好办了。如果服务自身有变更资源限制的支持的话，可以使用服务自身的配置；如果服务提供了变更用户的支持的话，可以以 root 用户启动，在启动脚本中加入 ulimit 相关命令。令人高兴的是，这两个功能 MySQL 都有支持。</p>
+
+<p>服务自身没提供那么完备的支持又该怎么办呢？比较直接的办法有两种：</p>
+
+<ol>
+<li>可以修改源码的话，可以给程序自身加上相应的支持。</li>
+<li>以 root 启动，在启动脚本中执行 <code>ulimit</code>，再以 <code>su</code>/<code>sudo</code> 执行对应命令。这里还有些需要注意的点将在下一节讲述。</li>
+</ol>
+
+<p>上面介绍的两种启动管理器，已经能够覆盖大多数场景了。这里还需要注意，debian/ubuntu 的一些版本混用 systemd 和 SysVinit，需要自己判断用哪套方案。另外，ubuntu 历史上使用过 <a href="http://upstart.ubuntu.com/"><code>Upstart</code></a> 作为启动管理器，因过于小众且已弃用，这里不做介绍。</p>
+
+<h3 id="变更用户">变更用户</h3>
+
+<p>写这一节是源于 debian 系和 rhel 系操作系统的一个默认配置的不同，导致资源限制在使用 <code>su</code> 后呈现不同的状态。让我们来重现一下二者对应的行为：</p>
+
+<ol>
+<li>在 <code>/etc/security/limits.conf</code> 中配置某用户(A)一项资源限制(num1)</li>
+<li>登陆另一用户(B)，执行 <code>ulimit</code> 修改该项资源限制(num2)，并使修改后的值与配置的值不同(num1 != num2)</li>
+<li>执行 <code>su</code> 命令，<code>su</code> 到我们配置过的那个用户(A) ，使用 <code>ulimit</code> 来查看当前的资源限制数
+
+<ul>
+<li>Centos 在 <code>su</code> 前后资源限制数相同(num2)</li>
+<li>Debian/Ubuntu 在 <code>su</code> 之后，资源限制变为我们在文件中配置的值(num1)</li>
+</ul></li>
+<li>执行 <code>sudo</code> 命令，二者的行为与 Centos 下 <code>su</code> 的行为相同</li>
+</ol>
+
+<p>二者对应的行为，是由 <a href="https://wiki.archlinux.org/index.php/PAM_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)">PAM</a> 模块控制的。阅读  <a href="https://www.kernel.org/pub/linux/utils/util-linux/"><code>util-linux</code></a> 中 <code>su</code> 和 <code>sudo</code> 的实现源码可以了解到，在执行完必要的工作后，其调用了 PAM 模块的接口，实现相应的权限变更，其中包括对资源限制的控制。</p>
+
+<p>PAM 模块在系统中的配置文件在：</p>
+
+<pre><code>/etc/pam.conf
+/etc/pam.d/*
+</code></pre>
+
+<p>分析并对比二者 <code>/etc/pam.d/</code> 下 <code>su</code> 对应的配置文件可知，二者行为差别，来自于 <code>pam_limits.so</code> 的调用与否。</p>
+
+<h1 id="源码分析">源码分析</h1>
+
+<p>先说明一下，本文所用到的源码，均可以在 linux kernel <a href="https://www.kernel.org">网站</a>下载，也可以在 github 上下载和查看。kernel 网站的 git 链接如下：</p>
+
+<pre><code class="language-sh">git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+git://git.kernel.org/pub/scm/utils/util-linux/util-linux.git
+</code></pre>
+
+<h2 id="从文档入手">从文档入手</h2>
+
+<p>Linux 源码库中有个显眼的目录 <a href="https://github.com/torvalds/linux/tree/master/Documentation"><code>Documentation</code></a>。没错，里面放了 kernel 的各式文档，想找哪个资料，直接查找这个目录就好了。</p>
+
+<p>与我们今天的主题 <code>RLIMIT_NOFILE</code> 相关的文档，集中在 <a href="https://github.com/torvalds/linux/blob/v4.5-rc6/Documentation/sysctl/fs.txt#L114">linux/Documentation/sysctl/fs.txt</a> 中。文档全文较长，这里截取两小段，印证一下之前的一些描述：</p>
+
+<blockquote>
+<p>file-max &amp; file-nr:</p>
+
+<p>The value in file-max denotes the maximum number of file-
+handles that the Linux kernel will allocate.</p>
+
+<hr />
+
+<p>nr_open:</p>
+
+<p>This denotes the maximum number of file-handles a process can
+allocate. Default value is 1024*1024 (1048576) which should be
+enough for most machines. Actual limit depends on RLIMIT_NOFILE
+resource limit.</p>
+</blockquote>
+
+<h2 id="rlimit-nofile-的控制逻辑">RLIMIT_NOFILE 的控制逻辑</h2>
+
+<p>RLIMIT_NOFILE 控制的是进程最多能打开文件描述符数的数量，控制的逻辑自然应该在打开新文件描述符的过程中。让我们来看看具体是怎么打开新文件描述符的，代码在 <a href="https://github.com/torvalds/linux/blob/v4.5-rc6/fs/file.c#L497">linux/fs/file.c</a>：</p>
+
+<pre><code class="language-C">static int alloc_fd(unsigned start, unsigned flags)
+{
+	return __alloc_fd(current-&gt;files, start, rlimit(RLIMIT_NOFILE), flags);
+}
+</code></pre>
+
+<pre><code class="language-C">/*
+ * allocate a file descriptor, mark it busy.
+ */
+int __alloc_fd(struct files_struct *files,
+	       unsigned start, unsigned end, unsigned flags)
+{
+...
+  	spin_lock(&amp;files-&gt;file_lock);
+repeat:
+	fdt = files_fdtable(files);
+	fd = start;
+	if (fd &lt; files-&gt;next_fd)
+		fd = files-&gt;next_fd;
+
+	if (fd &lt; fdt-&gt;max_fds)
+		fd = find_next_fd(fdt, fd);
+...
+	/*
+	 * N.B. For clone tasks sharing a files structure, this test
+	 * will limit the total number of files that can be opened.
+	 */
+	error = -EMFILE;
+	if (fd &gt;= end)
+		goto out;
+...
+out:
+	spin_unlock(&amp;files-&gt;file_lock);
+	return error;
+}
+</code></pre>
+
+<p>内核用一个链表来保存文件描述符，这也解决了文件描述符的计数问题。当链表最后一个文件描述符的计数（已打开文件描述符数）大于进程的 RLIMIT_NOFILE 对应的值时，返回 <code>EMFILE</code> 错误，也就是我们常看到的 <code>Too many open files</code>。</p>
+
+<p>这个链表的实现，可以在 <a href="https://github.com/torvalds/linux/blob/master/include/linux/fdtable.h#L48">include/linux/fdtable.h</a> 找到具体定义：</p>
+
+<pre><code class="language-C">/*
+ * Open file table structure
+ */
+struct files_struct {
+...
+	struct fdtable __rcu *fdt;
+	struct fdtable fdtab;
+...
+	int next_fd;
+...
+};
+
+struct fdtable {
+	unsigned int max_fds;
+	struct file __rcu **fd;      /* current fd array */
+	unsigned long *close_on_exec;
+	unsigned long *open_fds;
+	unsigned long *full_fds_bits;
+	struct rcu_head rcu;
+};
+</code></pre>
+
+<h2 id="资源限制信息的保存">资源限制信息的保存</h2>
+
+<p>资源限制信息保存在进程上，准确地说，是保存在进程控制块 (PCB) 中的 <code>signal_struct *signal</code> 中。不仅是资源限制，这个结构还保存了很多其它进程的信息，内核的进程调度离不开这个结构。</p>
+
+<p>因为该结构里面包含了不少我们平时常见的东西，值得了解，就稍微多贴一些代码，在这先说声抱歉。相应的代码在 <a href="https://github.com/torvalds/linux/blob/v4.5-rc6/include/linux/sched.h#L1389">include/linux/sched.h</a>：</p>
+
+<pre><code class="language-C">struct task_struct {
+	volatile long state;	/* -1 unrunnable, 0 runnable, &gt;0 stopped */
+	void *stack;
+	atomic_t usage;
+...
+	struct mm_struct *mm, *active_mm;
+	/* per-thread vma caching */
+	u32 vmacache_seqnum;
+struct vm_area_struct *vmacache[VMACACHE_SIZE];
+...
+  /* task state */
+	int exit_state;
+	int exit_code, exit_signal;
+...
+	pid_t pid;
+	pid_t tgid;
+
+	/*
+	 * pointers to (original) parent process, youngest child, younger sibling,
+	 * older sibling, respectively.  (p-&gt;father can be replaced with
+	 * p-&gt;real_parent-&gt;pid)
+	 */
+	struct task_struct __rcu *real_parent; /* real parent process */
+	struct task_struct __rcu *parent; /* recipient of SIGCHLD, wait4() reports */
+...
+/* open file information */
+	struct files_struct *files;
+...
+/* signal handlers */
+	struct signal_struct *signal;
+...
+	struct sigpending pending;
+...
+};
+</code></pre>
+
+<p><code>signal_struct</code> 的定义在 <a href="https://github.com/torvalds/linux/blob/v4.5-rc6/include/linux/sched.h#L657">include/linux/sched.h</a>：</p>
+
+<pre><code class="language-C">struct signal_struct {
+...
+	/* current thread group signal load-balancing target: */
+	struct task_struct *curr_target;
+...
+	/*
+	 * We don't bother to synchronize most readers of this at all,
+	 * because there is no reader checking a limit that actually needs
+	 * to get both rlim_cur and rlim_max atomically, and either one
+	 * alone is a single word that can safely be read normally.
+	 * getrlimit/setrlimit use task_lock(current-&gt;group_leader) to
+	 * protect this instead of the siglock, because they really
+	 * have no need to disable irqs.
+	 */
+	struct rlimit rlim[RLIM_NLIMITS];
+...
+}
+</code></pre>
+
+<h2 id="rlimit-nofile-的两个默认值">RLIMIT_NOFILE 的两个默认值</h2>
+
+<p>为了解 RLIMIT_NOFILE 软、硬限制的两个默认值的由来，我们需要知道一些进程相关的基础知识，这里做个简单的描述：</p>
+
+<ul>
+<li>子进程会继承父进程的资源限制</li>
+<li>我们在系统中看到的进程都是 1 号进程(systemd/SysVinit)的子、孙等后辈进程。</li>
+<li>执行 ulimit 命令看到的是 shell(bash) 进程自身的信息，即 1 号进程的后辈进程的信息</li>
+<li>1 号进程是 0 号进程的子进程，而 0 号进程是在内核中生成的</li>
+<li>因 PAM 模块会变更资源限制，不保证我们实际看到的资源限制数值和将要介绍的数值完全一致</li>
+</ul>
+
+<p>查看 <a href="https://github.com/torvalds/linux/blob/v4.5-rc6/include/asm-generic/resource.h#L10">linux/include/asm-generic/resource.h</a>，我们可以找到初始化资源限制定义的代码：</p>
+
+<pre><code class="language-c">/*
+ * boot-time rlimit defaults for the task:
+ */
+#define INIT_RLIMITS							\
+{									\
+...
+	[RLIMIT_NOFILE]		= {   INR_OPEN_CUR,   INR_OPEN_MAX },	\
+...
+}
+
+#endif
+</code></pre>
+
+<p>而其中的 <code>INR_OPEN_CUR</code> 与 <code>INR_OPEN_MAX</code> 在 <a href="https://github.com/torvalds/linux/blob/v4.5-rc6/include/uapi/linux/fs.h#L28">linux/include/uapi/linux/fs.h</a> 有具体定义：</p>
+
+<pre><code class="language-c">#define INR_OPEN_CUR 1024	/* Initial setting for nfile rlimits */
+#define INR_OPEN_MAX 4096	/* Hard limit for nfile rlimits */
+</code></pre>
+
+<p>由此可知，软、硬资源的这两个初始值，是在内核里就已经有定义的。去掉所有外部调整资源限制的操作，我们看到的应当是 <code>1024</code> 和 <code>4096</code> 这两个数字。</p>
+
+<h1 id="纠误与总结">纠误与总结</h1>
+
+<p>通过前面的代码分析，我们大致可以得出这样一个结论，就是资源限制的相关信息（数值、控制逻辑）是绑定在进程上的，脱离了具体进程讨论资源限制是没有意义的。</p>
+
+<h2 id="纠误">纠误</h2>
+
+<p>在我们查找相关资料的过程中，经常会看到这样一个观点：资源限制是绑定在 session 上的属性，会随用户会话的变更而变化。</p>
+
+<p>而实际上，进程的的继承使资源限制在父子进程间以线性的形式展现在我们面前。由于 PAM 的存在，使得资源限制的表现看起来像是绑定在用户、session 上的属性。其内部实现与用户、session 并无直接关系。</p>
+
+<h2 id="总结">总结</h2>
+
+<p>资源限制导致的错误很常见，特别是 RLIMIT_NOFILE，掌握配置它的方法已经成了 DBA 的一个必备技能。但实际生活中，很少有人理解其内部的工作机理，在笔者做这个研究时，甚至没能找到一篇文章能清楚的说明资源限制在传递过程中的关键点。</p>
+
+<p>目前，很高兴地看到很多软件已经提供了 RLIMIT_NOFILE 的支持。特别是应用广泛的 <a href="https://github.com/moby/moby"><code>docker</code></a>，docker 在自身的启动脚本中进行了相关的配置，其自身及容器中进程的 RLIMIT_NOFILE 已经变成了 <code>1048576</code>。这样我们在做一些容器化的服务时就不必过多考虑资源限制的事了，但面对一些无法容器化的场景，还需要我们来进行手工配置。</p>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">wweir</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2018-03-01 17:38
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a></span>
+  </p>
+</div>
+<div class="post-reward">
+  <input type="checkbox" name="reward" id="reward" hidden />
+  <label class="reward-button" for="reward">赞赏支持</label>
+  <div class="qr-code">
+    
+    <label class="qr-code-image" for="reward">
+        <img class="image" src="/wechat-qr-code.png">
+        <span>微信打赏</span>
+      </label>
+    <label class="qr-code-image" for="reward">
+        <img class="image" src="/alipay-qr-code.png">
+        <span>支付宝打赏</span>
+      </label>
+  </div>
+</div><footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/linux/">linux</a>
+          <a href="/tags/rlimit/">rlimit</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%BA%E4%B8%80%E8%87%B4%E6%80%A7%E8%AF%BB%E7%9A%84%E5%B7%A5%E7%A8%8B%E6%80%9D%E7%B4%A2/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">分布式强一致性读的工程思索</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E5%9C%A8-golang-%E4%B8%AD%E7%9A%84%E5%AE%9E%E8%B7%B5/">
+            <span class="next-text nav-default">系统调用在 Golang 中的实践</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2018-03-01 17:38:11 \x2b0800 \x2b0800',
+        title: '资源限制(RLIMIT_NOFILE)的调整细节及内部实现',
+        clientID: '39fb15be6da69f060191',
+        clientSecret: 'a3b3072801814b4b5463b98fd8aae27651e79f01',
+        repo: 'wweir.github.io',
+        owner: 'wweir',
+        admin: ['wweir'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:wweir@foxmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://stackoverflow.com/users/5540725/wweir" class="iconfont icon-stack-overflow" title="stack-overflow"></a>
+      <a href="https://plus.google.com/&#43;wweir" class="iconfont icon-google" title="google"></a>
+      <a href="https://github.com/wweir" class="iconfont icon-github" title="github"></a>
+      <a href="https://www.zhihu.com/people/wweir" class="iconfont icon-zhihu" title="zhihu"></a>
+      <a href="https://www.douban.com/people/wweir26/" class="iconfont icon-douban" title="douban"></a>
+      <a href="https://getpocket.com/@wweir9" class="iconfont icon-pocket" title="pocket"></a>
+  <a href="https://wweir.cc/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  <div class="busuanzi-footer">
+    <span id="busuanzi_container_site_pv"> 本站总访问量 <span id="busuanzi_value_site_pv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 次 </span>
+      <span class="division">|</span>
+    <span id="busuanzi_container_site_uv"> 本站总访客数 <span id="busuanzi_value_site_uv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 人 </span>
+  </div>
+
+  <span class="copyright-year">
+    &copy; 
+    2018-01-10 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">wweir</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  <script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.26188efa.min.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>

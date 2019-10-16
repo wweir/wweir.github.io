@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Golang 项目组织形式的演进 - 温习江湖</title>
+  <meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+
+<meta name="author" content="wweir" /><meta name="description" content="包管理与项目组织形式的历史 很多从其它语言转 golang 的程序员都会对 GOPATH 这个设定感到困惑，为什么其它语言不要求把所有代码放在同一个目录，golang 就有" /><meta name="keywords" content="devops, golang, concurrency" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.58.3 with theme even" />
+
+
+<link rel="canonical" href="https://wweir.cc/post/golang-%E9%A1%B9%E7%9B%AE%E7%BB%84%E7%BB%87%E5%BD%A2%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B/" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<link href="/dist/even.c2a46f00.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">
+
+
+<meta property="og:title" content="Golang 项目组织形式的演进" />
+<meta property="og:description" content="包管理与项目组织形式的历史 很多从其它语言转 golang 的程序员都会对 GOPATH 这个设定感到困惑，为什么其它语言不要求把所有代码放在同一个目录，golang 就有" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://wweir.cc/post/golang-%E9%A1%B9%E7%9B%AE%E7%BB%84%E7%BB%87%E5%BD%A2%E5%BC%8F%E7%9A%84%E6%BC%94%E8%BF%9B/" />
+<meta property="article:published_time" content="2018-10-25T10:38:54+08:00" />
+<meta property="article:modified_time" content="2019-04-17T13:44:10+08:00" />
+<meta itemprop="name" content="Golang 项目组织形式的演进">
+<meta itemprop="description" content="包管理与项目组织形式的历史 很多从其它语言转 golang 的程序员都会对 GOPATH 这个设定感到困惑，为什么其它语言不要求把所有代码放在同一个目录，golang 就有">
+
+
+<meta itemprop="datePublished" content="2018-10-25T10:38:54&#43;08:00" />
+<meta itemprop="dateModified" content="2019-04-17T13:44:10&#43;08:00" />
+<meta itemprop="wordCount" content="2608">
+
+
+
+<meta itemprop="keywords" content="golang,git," />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Golang 项目组织形式的演进"/>
+<meta name="twitter:description" content="包管理与项目组织形式的历史 很多从其它语言转 golang 的程序员都会对 GOPATH 这个设定感到困惑，为什么其它语言不要求把所有代码放在同一个目录，golang 就有"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">温习江湖</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <a href="/">
+        <li class="mobile-menu-item">首页</li>
+      </a><a href="/post/">
+        <li class="mobile-menu-item">归档</li>
+      </a><a href="/tags/">
+        <li class="mobile-menu-item">标签</li>
+      </a><a href="/about/">
+        <li class="mobile-menu-item">关于我</li>
+      </a>
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+        <div class="logo-wrapper">
+  <a href="/" class="logo">温习江湖</a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    <li class="menu-item">
+        <a class="menu-item-link" href="/">首页</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/post/">归档</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/tags/">标签</a>
+      </li><li class="menu-item">
+        <a class="menu-item-link" href="/about/">关于我</a>
+      </li>
+  </ul>
+</nav>
+    </header>
+
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+    
+    <header class="post-header">
+      <h1 class="post-title">Golang 项目组织形式的演进</h1>
+
+      <div class="post-meta">
+        <span class="post-time"> 2018-10-25 10:38 </span>
+        <div class="post-category">
+            <a href="/categories/dev/"> dev </a>
+            </div>
+          <span class="more-meta"> 约 2608 字 </span>
+          <span class="more-meta"> 预计阅读 6 分钟 </span>
+        <span id="busuanzi_container_page_pv" class="more-meta"> <span id="busuanzi_value_page_pv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 次阅读 </span>
+      </div>
+    </header>
+
+    <div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content always-active">
+    <nav id="TableOfContents">
+<ul>
+<li><a href="#包管理与项目组织形式的历史">包管理与项目组织形式的历史</a>
+<ul>
+<li><a href="#项目代码直接放-git-repo-中">项目代码直接放 git repo 中</a></li>
+<li><a href="#gopath-放在-git-repo-中">GOPATH 放在 git repo 中</a></li>
+<li><a href="#带上-vendor-放在-git-repo-中">带上 vendor 放在 git repo 中</a></li>
+<li><a href="#带上-go-modules-配置文件">带上 Go modules 配置文件</a></li>
+<li><a href="#回望与希冀">回望与希冀</a>
+<ul>
+<li><a href="#回顾">回顾</a></li>
+<li><a href="#预期">预期</a></li>
+</ul></li>
+<li><a href="#随记-快速将现有项目依赖管理转换为-go-modules">随记：快速将现有项目依赖管理转换为 go modules</a>
+<ul>
+<li><a href="#需要注意的问题">需要注意的问题</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+</div>
+    <div class="post-content">
+      
+
+<h1 id="包管理与项目组织形式的历史">包管理与项目组织形式的历史</h1>
+
+<p>很多从其它语言转 golang 的程序员都会对 <code>GOPATH</code> 这个设定感到困惑，为什么其它语言不要求把所有代码放在同一个目录，golang 就有这样一个奇怪的要求。</p>
+
+<p>根据了解，这是由于 golang 有几位来自 google 的主要缔造者。google 内部是把所有的代码放在一个大仓库里，很好用，于是 golang 的包管理也被设计成了适合这种模式的玩法。当我们把所有代码都放在一起时，很好用。</p>
+
+<h2 id="项目代码直接放-git-repo-中">项目代码直接放 git repo 中</h2>
+
+<p>对应于 golang 自身的包管理，我们就有了最朴素，也是在 github 上最常见的项目组织形式：<strong>直接把包放在 git 目录中，托管在 github 等代码托管平台</strong>。这里相比其它语言，最重要的一点是：所有包都是以远程包的形式来组织与使用的。</p>
+
+<p>这也就有一个大大的问题，所有依赖包都是远程包，如果我们依赖的包被删了或者进行了不兼容的更新，我们的包也会无法编译。同时，国家安全防火墙（功夫网）也给这种项目组织形式造成了很大的麻烦，很多常用的包下载很不方便。</p>
+
+<pre><code class="language-bash">$GOPATH
+└── [  96]  src
+    └── [  96]  github.com
+        └── [  96]  wweir
+            └── [  96]  test # git repository root
+                └── [   0]  main.go
+</code></pre>
+
+<h2 id="gopath-放在-git-repo-中">GOPATH 放在 git repo 中</h2>
+
+<p>于是，集思广益，在工程上充分利用 golang 支持多 <code>GOPATH</code> 的特性，使用<strong>一个项目对应一个 GOPATH</strong>的方式来进行管理，这也是 golang 1.6（vendor） 之前主要的项目组织方式。具体来说，就是把整个 <code>GOPATH</code> 都放在 git 目录中，这样所有依赖的代码就都在我们自己的项目中有了备份了，只要自己的项目目录在，就可以进行正常开发和编译。</p>
+
+<p>但是，这种组织形式是真的丑，丑出天际。各种依赖库都在本地有完整的备份，这里面包括了大量我们不需要的代码。最难受的是，各远程依赖包 <code>.git</code> 目录没有优雅的处理方式，删掉就没法升级各依赖库，不删则严重污染我们的源码库。我们是要使用 git submodule<code>、</code>git subtree 进行稍微工程化一点的管理方式，还是图方便，强行把 <code>.git</code> 目录下的文件当成普通文件加到项目中呢？</p>
+
+<pre><code class="language-bash">$GOPATH # git repository root
+└── [ 128]  src
+    ├── [  64]  github.com
+    └── [  96]  test
+        └── [   0]  main.go
+</code></pre>
+
+<h2 id="带上-vendor-放在-git-repo-中">带上 vendor 放在 git repo 中</h2>
+
+<p>针对前面的问题，golang 在 1.5、1.6 的时候，又给出了新的解决方案，就是增加了对 <code>vendor</code> 目录的支持。自此，依赖管理方式终于不那么难受，可以使用一些自动化工具进行管理了。</p>
+
+<p>我们只要把项目代码中加入<code>vendor</code> 目录，并把<strong>所有依赖的代码放在 <code>vendor</code> 目录下</strong>就可以了。而把依赖代码放入 <code>vendor</code> 目录的过程，可以通过工具自动化实现，其中使用最广泛的工具是 <code>glide</code> 和 <code>dep</code>，其中 <code>glide</code> 出现较早，<code>dep</code> 作为官方推出的工具，出现较晚。这些依赖管理工具都有自己推导版本依赖的功能，自动选出适合自己项目的依赖库版本。</p>
+
+<p><code>vendor</code> 虽说已经可以使用了，但相比其它语言的包管理工具，还远远算不上好用。vendor 目录中保存了大量其它源码库的代码，如果加到我们的源码库中，则污染 git 历史，不加到源码库中，同样要首功夫网影响。</p>
+
+<p>并且，相同的依赖包的代码，在多个项目中需要保存多份。这占用了磁盘空间，并且编译器无法重复利用编译的缓存文件，加长了编译时间。另外一个硬伤就是：不好处理同时依赖同一个包的两个不兼容版本的情况。</p>
+
+<pre><code class="language-bash">$GOPATH
+└── [  96]  src
+    └── [  96]  github.com
+        └── [  96]  wweir
+            └── [ 128]  test # git repository root
+                ├── [   0]  main.go
+                └── [  64]  vendor (optional: add to .gitignore)
+</code></pre>
+
+<h2 id="带上-go-modules-配置文件">带上 Go modules 配置文件</h2>
+
+<p>Go mod 是官方最新推出的依赖管理方案，这个方案很大程度上解决了之前的问题。首先，<strong>GOPATH 不再是一个强依赖的概念</strong>，项目代码可以放在任意目录，依赖库统一保存在 <code>$GOPATH/pkg/mod</code> 底下，GOPATH 目录可以自动生成。这样，做到了：</p>
+
+<ol>
+<li>很大程度上消除了 GOPATH 的概念</li>
+<li>解决了 vendor 方案引入的问题，可以轻松做到避免重复代码、编译缓存。</li>
+<li>解决依赖同一依赖包不同版本的问题</li>
+</ol>
+
+<p>这样，golang 的包管理方案就基本和其它语言一些优秀的包管理策略相差不大，我们就可以把我们自己的代码干干净净地放在 git 目录中了。</p>
+
+<p>当然，它还蹲在一些明显的缺点。</p>
+
+<ul>
+<li>首先，配置文件使用自定义的语法，就是一件很难受的事情，虽然语法不复杂，但想要对配置文件实现一些自动化操作，就很麻烦了。</li>
+<li>其次，还是没有彻底避开 <code>GOPATH</code> 这个概念，默认 <code>GOPATH</code> 的位置比较碍眼，如果想修改对应的位置，就不得不去了解这个概念。</li>
+
+<li><p>还有一个问题，golang 把全网当做包的远程源，无法解决包被删除以及被功夫网屏蔽的问题。</p>
+
+<pre><code class="language-bash">├── [ 128]  $GOPATH
+│   ├── [  96]  pkg
+│   │   └── [  64]  mod
+│   └── [  96]  src
+│       └── [  96]  github.com
+└── [ 160]  test # git repository root
+├── [   0]  go.mod
+├── [   0]  go.sum
+└── [   0]  main.go
+</code></pre></li>
+</ul>
+
+<h2 id="回望与希冀">回望与希冀</h2>
+
+<h3 id="回顾">回顾</h3>
+
+<p>从头再捋一遍整个项目组织形式，不襟感觉兜了个大圈又回到了最初出发时的样子，却是把很多问题都已经解决了。对比最朴素的 go get 与最后的 go mod 方案，可以发现，真正解决的主要有三个问题：</p>
+
+<ol>
+<li>一定程度上干掉了 <code>GOPATH</code></li>
+<li>包的版本推导与管理</li>
+<li>第三方包下载到本地的形式</li>
+<li>依赖同一个包不同版本的问题</li>
+</ol>
+
+<p>依然存在的问题：</p>
+
+<ol>
+<li><code>GOPATH</code> 仍然是一个无法完全抹去的概念</li>
+<li>各依赖库依然存在被删除、被屏蔽等问题</li>
+</ol>
+
+<h3 id="预期">预期</h3>
+
+<p>由于 golang 没有中心化的包管理、下载仓库，无法保证所有包都能稳定、方便地下载与使用。同时，由于没有审核之类的东西，各个包的质量也难以保证，甚至充斥着大量低质、不规范的包。当然，这种做法的好处也是有的，就是我们发布自己的包非常方便，因此五花八门的包也会多些。</p>
+
+<p>在可预见的未来，以下问题将愈加严峻起来：</p>
+
+<ol>
+<li><strong>语义化版本不规范问题</strong>
+
+<ul>
+<li>由于推出 vendor 之前，golang 一直没突出语义化版本的概念，导致目前大量库没有自己的版本管理，即使有，多数管理也做得很差。这就导致各工具在分析语义化版本时，无法以最正确的方式工作。</li>
+<li>可以想象这样一个场景，某项目使用了一个第三方库，开发很活跃，质量也很好，但仓库只有一个两年前的 <code>v0.0.1</code> 的 tag，自动版本推导就被误导了，使用一些带有诡异 bug 的过时版本，这时我们就只能选择手动冻结所使用的版本 。</li>
+</ul></li>
+<li>没有中心化的依赖库下载源，导致大量依赖库质量不高的库被使用，影响 golang 整个生态的发展速度。</li>
+</ol>
+
+<h2 id="随记-快速将现有项目依赖管理转换为-go-modules">随记：快速将现有项目依赖管理转换为 go modules</h2>
+
+<ol>
+<li>在当前项目目录中执行 <code>GO111MODULE=on go mod init github.com/user/repo</code></li>
+<li><code>GO111MODULE=on go mod tidy</code></li>
+<li>需要使用 vendor 目录的话，执行 <code>GO111MODULE=on go mod vendor</code></li>
+<li>git 提交当前代码</li>
+<li>在 <code>GOPATH</code> 以外的地方下载当前项目，默认开启 go mod 相关功能</li>
+</ol>
+
+<h3 id="需要注意的问题">需要注意的问题</h3>
+
+<p>当启用 <code>go modules</code> 时候，编译器不使用 <code>vendor</code> 底下的内容。在 <code>vendor</code> 时期，golang 编译可以做到不用从网络下载任何包，而现在需要下载依赖包，这就意味着 ci 的 runner 必须设置好代理。如果不便使用代理，就必须在项目目录的 <code>go.mod</code> 包中写出所用到的包的替代地址，精确到版本（go 1.12 有解决）。</p>
+
+<p>另外一个有意思的点就是，如果一个项目用到了某使用 <code>go modules</code> 进行版本管理的第三方包，<code>go build</code> 会下载该包 modules 配置文件（即 go.mod) 中提及的所有包，即使在我们的代码依赖树上用不到该包。但不会使用该包 go.mod
+文件中的定义好的地址替换规则，需要在我们自己的项目中自行定义。</p>
+
+    </div>
+
+    <div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">wweir</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+        2019-04-17 13:44
+        
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a></span>
+  </p>
+</div>
+<div class="post-reward">
+  <input type="checkbox" name="reward" id="reward" hidden />
+  <label class="reward-button" for="reward">赞赏支持</label>
+  <div class="qr-code">
+    
+    <label class="qr-code-image" for="reward">
+        <img class="image" src="/wechat-qr-code.png">
+        <span>微信打赏</span>
+      </label>
+    <label class="qr-code-image" for="reward">
+        <img class="image" src="/alipay-qr-code.png">
+        <span>支付宝打赏</span>
+      </label>
+  </div>
+</div><footer class="post-footer">
+      <div class="post-tags">
+          <a href="/tags/golang/">golang</a>
+          <a href="/tags/git/">git</a>
+          </div>
+      <nav class="post-nav">
+        <a class="prev" href="/post/%E5%BC%80%E5%8F%91%E5%9F%BA%E4%BA%8E-envoy-%E7%9A%84%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E7%BD%91%E5%85%B3/">
+            <i class="iconfont icon-left"></i>
+            <span class="prev-text nav-default">开发基于 Envoy 的高性能服务网关</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        <a class="next" href="/post/%E5%88%86%E5%B8%83%E5%BC%8F%E5%BC%BA%E4%B8%80%E8%87%B4%E6%80%A7%E8%AF%BB%E7%9A%84%E5%B7%A5%E7%A8%8B%E6%80%9D%E7%B4%A2/">
+            <span class="next-text nav-default">分布式强一致性读的工程思索</span>
+            <span class="next-text nav-mobile">下一篇</span>
+            <i class="iconfont icon-right"></i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+        </div>
+        <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      var gitalk = new Gitalk({
+        id: '2018-10-25 10:38:54 \x2b0800 \x2b0800',
+        title: 'Golang 项目组织形式的演进',
+        clientID: '39fb15be6da69f060191',
+        clientSecret: 'a3b3072801814b4b5463b98fd8aae27651e79f01',
+        repo: 'wweir.github.io',
+        owner: 'wweir',
+        admin: ['wweir'],
+        body: decodeURI(location.href)
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://github.com/gitalk/gitalk">comments powered by gitalk.</a></noscript>
+
+  
+
+  
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="social-links">
+      <a href="mailto:wweir@foxmail.com" class="iconfont icon-email" title="email"></a>
+      <a href="https://stackoverflow.com/users/5540725/wweir" class="iconfont icon-stack-overflow" title="stack-overflow"></a>
+      <a href="https://plus.google.com/&#43;wweir" class="iconfont icon-google" title="google"></a>
+      <a href="https://github.com/wweir" class="iconfont icon-github" title="github"></a>
+      <a href="https://www.zhihu.com/people/wweir" class="iconfont icon-zhihu" title="zhihu"></a>
+      <a href="https://www.douban.com/people/wweir26/" class="iconfont icon-douban" title="douban"></a>
+      <a href="https://getpocket.com/@wweir9" class="iconfont icon-pocket" title="pocket"></a>
+  <a href="https://wweir.cc/index.xml" type="application/rss+xml" class="iconfont icon-rss" title="rss"></a>
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" href="https://gohugo.io">Hugo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 - 
+    <a class="theme-link" href="https://github.com/olOwOlo/hugo-theme-even">Even</a>
+  </span>
+
+  <div class="busuanzi-footer">
+    <span id="busuanzi_container_site_pv"> 本站总访问量 <span id="busuanzi_value_site_pv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 次 </span>
+      <span class="division">|</span>
+    <span id="busuanzi_container_site_uv"> 本站总访客数 <span id="busuanzi_value_site_uv"><img src="/img/spinner.svg" alt="spinner.svg"/></span> 人 </span>
+  </div>
+
+  <span class="copyright-year">
+    &copy; 
+    2018-01-10 - 
+    2019
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+    <span class="author">wweir</span>
+  </span>
+</div>
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont icon-up"></i>
+    </div>
+  </div>
+  <script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="/dist/even.26188efa.min.js"></script>
+
+
+
+
+
+
+
+
+</body>
+</html>
