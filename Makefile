@@ -36,3 +36,6 @@ push:
 
 publish:
 	hugo --cleanDestinationDir --gc
+
+upgrade-subtree:
+	git subtree --prefix=themes/even pull --squash https://github.com/olOwOlo/hugo-theme-even master
